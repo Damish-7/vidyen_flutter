@@ -2,10 +2,29 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Start PHP Server",
+			"type": "shell",
+			"command": "cd api; php -S 0.0.0.0:8000 router.php",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": false
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "Run Flutter (Windows)",
 			"type": "shell",
 			"command": "flutter run -d windows",
 			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Server & Run App",
+			"dependsOn": [
+				"Start PHP Server"
+			],
 			"problemMatcher": []
 		}
 	]

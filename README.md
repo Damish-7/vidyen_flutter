@@ -4,6 +4,28 @@ A Flutter mobile application that replicates the VIDYEN Conference Management Sy
 
 ---
 
+## Quick Start (Every Morning) 🚀
+
+**The PHP server must be running for the app to work!**
+
+### Option 1: Double-click `start_server.bat`
+Just double-click the file in the project root folder.
+
+### Option 2: VS Code Task
+1. Press `Ctrl+Shift+P`
+2. Type "Run Task"
+3. Select "Start PHP Server"
+
+### Option 3: Command Line
+```bash
+cd api
+php -S 0.0.0.0:8000 router.php
+```
+
+📚 **See [README_SERVER.md](README_SERVER.md) for detailed troubleshooting**
+
+---
+
 ## Project Layout
 
 ```
