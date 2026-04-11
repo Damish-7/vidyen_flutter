@@ -243,6 +243,14 @@ class ConferenceService {
     return res;
   }
 
+  Future<Map<String, dynamic>> adminAssignPreconfReviewer(
+      String preconfId, String reviewerCode) async {
+    final res = await _api.post(
+        ApiConfig.preconfAssignReviewer(preconfId), {'reviewer_code': reviewerCode});
+    _assertSuccess(res);
+    return res;
+  }
+
   Future<List<WorkshopModel>> adminGetWorkshops() async {
     final res = await _api.get(ApiConfig.adminWorkshop);
     _assertSuccess(res);

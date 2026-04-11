@@ -203,4 +203,47 @@ class PreConferenceController {
         );
         Response::success(null, 'Status updated');
     }
+
+    /**
+     * POST /api/admin/preconference/{id}/assign-reviewer
+     * Assign a PreConference Reviewer to a preconference submission
+     */
+    public function assignReviewer(string $preId): void {
+        Auth::requireRole('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+        $conn  = getDB();
+        $esc   = fn($v) => mysqli_real_escape_string($conn, $v ?? '');
+
+        $reviewerCode = $esc($input['reviewer_code'] ?? '');
+        if (!$reviewerCode) Response::error('reviewer_code is required');
+
+        $preId = $esc($preId);
+
+        // Fetch the registration_id for this preconference
+        $preRow = mysqli_fetch_assoc(
+            mysqli_query($conn, "SELECT registration_id FROM `pre_conference` WHERE pre_confernce_id = '$preId' LIMIT 1")
+        );
+        if (!$preRow) Response::notFound('Pre-conference not found');
+        $regId = $esc($preRow['registration_id']);
+
+        // Remove prior assignment for this preconf if any
+        mysqli_query($conn, "DELETE FROM `assign_reviewer` WHERE abstract_id = '$preId'");
+
+        // Insert new assignment
+        mysqli_query($conn,
+            "INSERT INTO `assign_reviewer` (reviewer_id, registration_id, abstract_id, status)
+             VALUES ('$reviewerCode', '$regId', '$preId', 0)"
+        );
+
+        if (mysqli_affected_rows($conn) === 0) {
+            Response::serverError('Failed to assign reviewer: ' . mysqli_error($conn));
+        }
+
+        // Update preconference status to Under Review (1)
+        mysqli_query($conn,
+            "UPDATE `pre_conference` SET status = 1 WHERE pre_confernce_id = '$preId'"
+        );
+
+        Response::success(null, 'Reviewer assigned successfully');
+    }
 }

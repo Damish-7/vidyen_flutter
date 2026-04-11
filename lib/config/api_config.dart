@@ -44,6 +44,8 @@ class ApiConfig {
   static const String adminPreconf = '$baseUrl/admin/preconference';
   static String preconfStatus(String id) =>
       '$baseUrl/admin/preconference/$id/status';
+  static String preconfAssignReviewer(String id) =>
+      '$baseUrl/admin/preconference/$id/assign-reviewer';
   static const String adminWorkshop = '$baseUrl/admin/workshop';
   static String workshopStatus(String id) =>
       '$baseUrl/admin/workshop/$id/status';

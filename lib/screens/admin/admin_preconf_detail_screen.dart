@@ -18,11 +18,14 @@ class _AdminPreconfDetailScreenState extends State<AdminPreconfDetailScreen> {
   String? _error;
   Map<String, dynamic>? _preconf;
   List<dynamic> _authors = [];
+  List<Map<String, dynamic>> _reviewers = [];
+  bool _assigning = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadReviewers();
   }
 
   Future<void> _load() async {
@@ -45,8 +48,103 @@ class _AdminPreconfDetailScreenState extends State<AdminPreconfDetailScreen> {
     }
   }
 
+  Future<void> _loadReviewers() async {
+    try {
+      final all = await _service.adminGetReviewers();
+      setState(() {
+        _reviewers = all
+            .where((r) =>
+                (r['review_type'] ?? '').toString().toLowerCase().contains('preconference') ||
+                (r['review_type'] ?? '').toString().toLowerCase().contains('pre-conference') ||
+                (r['review_type'] ?? '').toString().toLowerCase().contains('pre conference'))
+            .toList();
+        // Fall back to all reviewers if none tagged as PreConference
+        if (_reviewers.isEmpty) _reviewers = all;
+      });
+    } catch (_) {
+      // Non-critical — button simply won't appear if list fails
+    }
+  }
+
+  Future<void> _showAssignDialog() async {
+    if (_reviewers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No reviewers available')),
+      );
+      return;
+    }
+
+    String? selected;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: const Text('Assign Reviewer'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _reviewers.length,
+              itemBuilder: (_, i) {
+                final r = _reviewers[i];
+                final code = r['reviewer_code']?.toString() ?? '';
+                return RadioListTile<String>(
+                  value: code,
+                  groupValue: selected,
+                  onChanged: (v) => setDlg(() => selected = v),
+                  title: Text(r['name']?.toString() ?? code,
+                      style: const TextStyle(fontSize: 13)),
+                  subtitle: Text(r['designation']?.toString() ?? '',
+                      style: const TextStyle(fontSize: 11)),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white),
+              onPressed: selected == null
+                  ? null
+                  : () async {
+                      Navigator.pop(ctx);
+                      await _assignReviewer(selected!);
+                    },
+              child: const Text('Assign'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _assignReviewer(String reviewerCode) async {
+    setState(() => _assigning = true);
+    try {
+      await _service.adminAssignPreconfReviewer(widget.preconfId, reviewerCode);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reviewer assigned successfully')),
+      );
+      _load(); // Refresh status
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _assigning = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final status = _preconf?['status']?.toString() ?? '';
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.preconfId),
@@ -190,6 +288,29 @@ class _AdminPreconfDetailScreenState extends State<AdminPreconfDetailScreen> {
                         ),
                       ),
                     ),
+      bottomNavigationBar: (!_loading && _preconf != null && status == '0')
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: _assigning ? null : _showAssignDialog,
+                  icon: _assigning
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.person_add_alt_1),
+                  label: Text(_assigning ? 'Assigning…' : 'Assign Reviewer'),
+                ),
+              ),
+            )
+          : null,
     );
   }
 
