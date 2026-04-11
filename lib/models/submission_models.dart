@@ -1,6 +1,6 @@
 class PreConferenceModel {
   final String preconferenceId;
-  final String participantId;
+  final String registrationId;
   final String subthemes;
   final String paperTitle;
   final String keyword;
@@ -11,7 +11,7 @@ class PreConferenceModel {
 
   PreConferenceModel({
     required this.preconferenceId,
-    required this.participantId,
+    required this.registrationId,
     required this.subthemes,
     required this.paperTitle,
     required this.keyword,
@@ -24,7 +24,7 @@ class PreConferenceModel {
   factory PreConferenceModel.fromJson(Map<String, dynamic> json) {
     return PreConferenceModel(
       preconferenceId: json['preconference_id']?.toString() ?? '',
-      participantId: json['participant_id']?.toString() ?? '',
+      registrationId: json['registration_id']?.toString() ?? '',
       subthemes: json['subthemes']?.toString() ?? '',
       paperTitle: json['paper_title']?.toString() ?? '',
       keyword: json['keyword']?.toString() ?? '',
@@ -38,18 +38,18 @@ class PreConferenceModel {
   String get statusLabel {
     switch (status) {
       case '2':
-        return 'Evaluated';
+        return 'Reviewed';
       case '1':
-        return 'Under Review';
+        return 'Assigned';
       default:
-        return 'Submitted';
+        return 'Not Assigned';
     }
   }
 }
 
 class WorkshopModel {
   final String workshopId;
-  final String participantId;
+  final String registrationId;
   final String subthemes;
   final String paperTitle;
   final String keyword;
@@ -60,7 +60,7 @@ class WorkshopModel {
 
   WorkshopModel({
     required this.workshopId,
-    required this.participantId,
+    required this.registrationId,
     required this.subthemes,
     required this.paperTitle,
     required this.keyword,
@@ -73,7 +73,7 @@ class WorkshopModel {
   factory WorkshopModel.fromJson(Map<String, dynamic> json) {
     return WorkshopModel(
       workshopId: json['workshop_id']?.toString() ?? '',
-      participantId: json['participant_id']?.toString() ?? '',
+      registrationId: json['registration_id']?.toString() ?? '',
       subthemes: json['subthemes']?.toString() ?? '',
       paperTitle: json['paper_title']?.toString() ?? '',
       keyword: json['keyword']?.toString() ?? '',
@@ -87,11 +87,11 @@ class WorkshopModel {
   String get statusLabel {
     switch (status) {
       case '2':
-        return 'Evaluated';
+        return 'Reviewed';
       case '1':
-        return 'Under Review';
+        return 'Assigned';
       default:
-        return 'Submitted';
+        return 'Not Assigned';
     }
   }
 }

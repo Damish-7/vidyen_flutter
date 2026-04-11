@@ -61,6 +61,14 @@ class ApiService {
     return _decode(res);
   }
 
+  Future<Map<String, dynamic>> delete(String url) async {
+    final res = await http.delete(
+      Uri.parse(url),
+      headers: await _headers(),
+    );
+    return _decode(res);
+  }
+
   Map<String, dynamic> _decode(http.Response res) {
     try {
       final json = jsonDecode(res.body) as Map<String, dynamic>;

@@ -117,6 +117,17 @@ if ($seg0 === 'workshop') {
     Response::notFound('Workshop route not found');
 }
 
+// REVIEWER routes  /reviewer/...
+if ($seg0 === 'reviewer') {
+    if ($seg1 === 'dashboard' && $method === 'GET') {
+        loadController('AdminController')->reviewerDashboard(); exit();
+    }
+    if ($seg1 === 'abstracts' && $method === 'GET') {
+        loadController('AdminController')->reviewerAbstracts(); exit();
+    }
+    Response::notFound('Reviewer route not found');
+}
+
 // CERTIFICATES routes  /certificates/...
 if ($seg0 === 'certificates') {
     $ctrl = loadController('CertificateController');
@@ -180,7 +191,11 @@ if ($seg0 === 'admin') {
     }
 
     if ($seg1 === 'certificates') {
-        loadController('CertificateController')->listAll(); exit();
+        $ctrl = loadController('CertificateController');
+        if ($method === 'GET'    && !$seg2)                  { $ctrl->listAll();        exit(); }
+        if ($method === 'POST'   && $seg2 === 'generate')    { $ctrl->generate();       exit(); }
+        if ($method === 'DELETE' && $seg2)                   { $ctrl->revoke($seg2);    exit(); }
+        Response::notFound('Admin certificates route not found');
     }
 
     if ($seg1 === 'users') {
@@ -195,7 +210,20 @@ if ($seg0 === 'admin') {
     }
 
     if ($seg1 === 'reviewers') {
-        loadController('AdminController')->listReviewers(); exit();
+        $ctrl = loadController('AdminController');
+        if ($method === 'GET'  && !$seg2)  { $ctrl->listReviewers();     exit(); }
+        if ($method === 'GET'  && $seg2)   { $ctrl->viewReviewer($seg2); exit(); }
+        if ($method === 'POST' && !$seg2)  { $ctrl->addReviewer();       exit(); }
+        Response::notFound('Admin reviewers route not found');
+    }
+
+    if ($seg1 === 'conference-rooms') {
+        $ctrl = loadController('ConferenceRoomController');
+        if ($method === 'GET'    && !$seg2) { $ctrl->listAll();       exit(); }
+        if ($method === 'POST'   && !$seg2) { $ctrl->create();        exit(); }
+        if ($method === 'PUT'    && $seg2)  { $ctrl->update($seg2);   exit(); }
+        if ($method === 'DELETE' && $seg2)  { $ctrl->delete($seg2);   exit(); }
+        Response::notFound('Conference rooms route not found');
     }
 
     Response::notFound('Admin route not found');

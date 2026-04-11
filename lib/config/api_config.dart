@@ -2,7 +2,7 @@ class ApiConfig {
   // For Windows desktop: use localhost:8000
   // For phone: use your PC's IP:8000 (run: php -S 0.0.0.0:8000 router.php)
   static const String baseUrl =
-      'http://192.168.14.24:8000'; // PHP dev server accessible from phone
+      'http://192.168.14.24:8070/vidyen_flutter/api'; // nginx via MAMP
 
   // Auth
   static const String login = '$baseUrl/auth/login';
@@ -48,9 +48,17 @@ class ApiConfig {
   static String workshopStatus(String id) =>
       '$baseUrl/admin/workshop/$id/status';
   static const String adminCerts = '$baseUrl/admin/certificates';
+  static const String adminGenerateCerts = '$baseUrl/admin/certificates/generate';
+  static String adminRevokeCert(String id) => '$baseUrl/admin/certificates/$id';
   static const String adminUsers = '$baseUrl/admin/users';
   static String toggleUser(String id) =>
       '$baseUrl/admin/users/$id/toggle-status';
   static const String adminMessages = '$baseUrl/admin/messages';
   static const String adminReviewers = '$baseUrl/admin/reviewers';
+  static const String reviewerDashboard = '$baseUrl/reviewer/dashboard';
+  static const String reviewerAbstracts = '$baseUrl/reviewer/abstracts';
+  static String reviewerById(String id) => '$baseUrl/admin/reviewers/$id';
+  static const String adminConferenceRooms = '$baseUrl/admin/conference-rooms';
+  static String conferenceRoomById(String id) =>
+      '$baseUrl/admin/conference-rooms/$id';
 }

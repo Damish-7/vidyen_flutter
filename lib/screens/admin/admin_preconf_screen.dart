@@ -1,40 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/conference_provider.dart';
-import '../../models/abstract_model.dart';
+import '../../models/submission_models.dart';
 import '../../widgets/app_theme.dart';
-import 'admin_abstract_detail_screen.dart';
+import 'admin_preconf_detail_screen.dart';
 
-class AdminAbstractsScreen extends StatefulWidget {
-  const AdminAbstractsScreen({super.key});
+class AdminPreconfScreen extends StatefulWidget {
+  const AdminPreconfScreen({super.key});
 
   @override
-  State<AdminAbstractsScreen> createState() => _AdminAbstractsScreenState();
+  State<AdminPreconfScreen> createState() => _AdminPreconfScreenState();
 }
 
-class _AdminAbstractsScreenState extends State<AdminAbstractsScreen> {
+class _AdminPreconfScreenState extends State<AdminPreconfScreen> {
   String _search = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback(
-        (_) => context.read<ConferenceProvider>().loadAllAbstracts());
+        (_) => context.read<ConferenceProvider>().loadAllPreconferences());
   }
 
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ConferenceProvider>();
-    final all = prov.allAbstracts;
+    final all = prov.allPreconferences;
     final error = prov.error;
 
     final filtered = _search.isEmpty
         ? all
-        : all.where((a) {
+        : all.where((p) {
             final q = _search.toLowerCase();
-            return a.abstractId.toLowerCase().contains(q) ||
-                a.registrationId.toLowerCase().contains(q) ||
-                a.paperTitle.toLowerCase().contains(q);
+            return p.preconferenceId.toLowerCase().contains(q) ||
+                p.registrationId.toLowerCase().contains(q) ||
+                p.paperTitle.toLowerCase().contains(q);
           }).toList();
 
     return Scaffold(
@@ -45,7 +45,7 @@ class _AdminAbstractsScreenState extends State<AdminAbstractsScreen> {
             child: TextField(
               onChanged: (v) => setState(() => _search = v),
               decoration: InputDecoration(
-                hintText: 'Search by abstract code, reg ID or title...',
+                hintText: 'Search by pre-conf code, reg ID or title...',
                 prefixIcon: const Icon(Icons.search),
                 isDense: true,
                 suffixIcon: _search.isNotEmpty
@@ -59,28 +59,30 @@ class _AdminAbstractsScreenState extends State<AdminAbstractsScreen> {
           ),
           if (prov.loading)
             const Expanded(
-                child: LoadingWidget(message: 'Loading abstracts...'))
+                child: LoadingWidget(
+                    message: 'Loading pre-conference submissions...'))
           else if (error != null)
             Expanded(
                 child: ErrorWidget2(
                     message: error,
-                    onRetry: () =>
-                        context.read<ConferenceProvider>().loadAllAbstracts()))
+                    onRetry: () => context
+                        .read<ConferenceProvider>()
+                        .loadAllPreconferences()))
           else
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () =>
-                    context.read<ConferenceProvider>().loadAllAbstracts(),
+                    context.read<ConferenceProvider>().loadAllPreconferences(),
                 child: filtered.isEmpty
                     ? const Center(
-                        child: Text('No abstracts found',
+                        child: Text('No pre-conference submissions found',
                             style: TextStyle(color: AppTheme.textGrey)))
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 4),
                         itemCount: filtered.length,
-                        itemBuilder: (_, i) => _AbstractAdminCard(
-                            serial: i + 1, abstract: filtered[i]),
+                        itemBuilder: (_, i) =>
+                            _PreconfAdminCard(serial: i + 1, preconf: filtered[i]),
                       ),
               ),
             ),
@@ -90,10 +92,10 @@ class _AdminAbstractsScreenState extends State<AdminAbstractsScreen> {
   }
 }
 
-class _AbstractAdminCard extends StatelessWidget {
+class _PreconfAdminCard extends StatelessWidget {
   final int serial;
-  final AbstractModel abstract;
-  const _AbstractAdminCard({required this.serial, required this.abstract});
+  final PreConferenceModel preconf;
+  const _PreconfAdminCard({required this.serial, required this.preconf});
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +107,7 @@ class _AbstractAdminCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (_) =>
-                AdminAbstractDetailScreen(abstractId: abstract.abstractId),
+                AdminPreconfDetailScreen(preconfId: preconf.preconferenceId),
           ),
         ),
         child: Padding(
@@ -113,45 +115,39 @@ class _AbstractAdminCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Serial + Abstract ID + status chip
+              // Serial + Pre-conf ID + status chip
               Row(children: [
                 _SerialBadge(serial),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(abstract.abstractId,
+                  child: Text(preconf.preconferenceId,
                       style: const TextStyle(
                           color: AppTheme.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13)),
                 ),
-                _StatusChip(status: abstract.status),
+                _StatusChip(status: preconf.status),
               ]),
               const SizedBox(height: 6),
 
               // Registration ID
               _IconRow(
                   icon: Icons.badge_outlined,
-                  text: 'Reg: ${abstract.registrationId}'),
+                  text: 'Reg: ${preconf.registrationId}'),
               const SizedBox(height: 4),
 
               // Paper title
-              Text(abstract.paperTitle,
+              Text(preconf.paperTitle,
                   style: const TextStyle(
                       fontWeight: FontWeight.w600, fontSize: 14),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis),
               const SizedBox(height: 4),
 
-              // Type of presentation
-              if (abstract.typeOfPresentation.isNotEmpty)
+              // Subtheme
+              if (preconf.subthemes.isNotEmpty)
                 _IconRow(
-                    icon: Icons.present_to_all_outlined,
-                    text: abstract.typeOfPresentation),
-
-              const SizedBox(height: 8),
-
-              // Reviewer info
-              _ReviewerRow(abstract: abstract),
+                    icon: Icons.category_outlined, text: preconf.subthemes),
 
               const SizedBox(height: 10),
               const Divider(height: 1),
@@ -172,8 +168,8 @@ class _AbstractAdminCard extends StatelessWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => AdminAbstractDetailScreen(
-                          abstractId: abstract.abstractId),
+                      builder: (_) => AdminPreconfDetailScreen(
+                          preconfId: preconf.preconferenceId),
                     ),
                   ),
                 ),
@@ -183,44 +179,6 @@ class _AbstractAdminCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ── Reviewer info ─────────────────────────────────────────────────────────────
-
-class _ReviewerRow extends StatelessWidget {
-  final AbstractModel abstract;
-  const _ReviewerRow({required this.abstract});
-
-  @override
-  Widget build(BuildContext context) {
-    final status = abstract.status;
-    final reviewer = abstract.reviewerName;
-
-    if (status == '0' || reviewer.isEmpty) {
-      return const _IconRow(
-          icon: Icons.person_off_outlined,
-          text: 'No reviewer assigned',
-          color: AppTheme.textGrey);
-    }
-
-    final color = status == '2' ? AppTheme.success : AppTheme.warning;
-    final label = status == '2' ? 'Reviewed by' : 'Assigned to';
-
-    return Row(children: [
-      Icon(Icons.rate_review_outlined, size: 13, color: color),
-      const SizedBox(width: 4),
-      Text('$label: ',
-          style: TextStyle(
-              color: color, fontSize: 12, fontWeight: FontWeight.w500)),
-      Expanded(
-        child: Text(reviewer,
-            style: TextStyle(
-                color: color, fontSize: 12, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis),
-      ),
-    ]);
   }
 }
 

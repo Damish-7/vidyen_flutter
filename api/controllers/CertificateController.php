@@ -132,7 +132,7 @@ class CertificateController {
         $conn = getDB();
 
         $result = @mysqli_query($conn,
-            "SELECT ct.*, r.full_name
+            "SELECT ct.*, r.full_name, r.honorofic, r.email
              FROM `certificate_generated` ct
              LEFT JOIN `registration` r ON ct.registration_code = r.registration_code
              ORDER BY ct.id DESC"
@@ -143,5 +143,74 @@ class CertificateController {
             while ($row = mysqli_fetch_assoc($result)) $rows[] = $row;
         }
         Response::success($rows);
+    }
+
+    /**
+     * POST /api/admin/certificates/generate
+     * Generate certificates for a batch of participants
+     * Body: { "certificate_type": "...", "users": ["REG001", "REG002", ...] }
+     */
+    public function generate(): void {
+        Auth::requireRole('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+        $conn  = getDB();
+
+        $certType = trim($input['certificate_type'] ?? '');
+        $users    = $input['users'] ?? [];
+
+        if (empty($certType)) Response::error('certificate_type is required');
+        if (empty($users) || !is_array($users)) Response::error('users array is required');
+
+        $allowedTypes = [
+            'preconference_item_analysis', 'mindful_map', 'sage', 'itlm',
+            'workshop_bridging', 'workshop_proms_prems', 'workshop_microteaching',
+            'first_place_paper', 'second_place_paper',
+            'first_place_poster', 'second_place_poster',
+            'first_place_yenvision', 'second_place_yenvision',
+        ];
+        if (!in_array($certType, $allowedTypes)) Response::error('Invalid certificate type');
+
+        $certType = mysqli_real_escape_string($conn, $certType);
+        $today    = date('d-m-Y');
+        $count    = 0;
+
+        foreach ($users as $regCode) {
+            $regCode = trim((string)$regCode);
+            if (empty($regCode)) continue;
+            $regCode = mysqli_real_escape_string($conn, $regCode);
+
+            // Upsert: skip if already exists
+            $exists = mysqli_fetch_assoc(mysqli_query($conn,
+                "SELECT id FROM `certificate_generated`
+                 WHERE registration_code = '$regCode' AND certificate_type = '$certType' LIMIT 1"
+            ));
+            if ($exists) continue;
+
+            mysqli_query($conn,
+                "INSERT INTO `certificate_generated` (registration_code, certificate_type, generated_on)
+                 VALUES ('$regCode', '$certType', '$today')"
+            );
+            if (mysqli_affected_rows($conn) > 0) $count++;
+        }
+
+        Response::success(['generated' => $count], "Certificates generated for $count participant(s)");
+    }
+
+    /**
+     * DELETE /api/admin/certificates/{id}
+     * Revoke a generated certificate record
+     */
+    public function revoke(string $id): void {
+        Auth::requireRole('admin');
+        $conn = getDB();
+        $id   = mysqli_real_escape_string($conn, $id);
+
+        $exists = @mysqli_fetch_assoc(mysqli_query($conn,
+            "SELECT id FROM `certificate_generated` WHERE id = '$id' LIMIT 1"
+        ));
+        if (!$exists) Response::notFound('Certificate record not found');
+
+        mysqli_query($conn, "DELETE FROM `certificate_generated` WHERE id = '$id'");
+        Response::success(null, 'Certificate revoked');
     }
 }

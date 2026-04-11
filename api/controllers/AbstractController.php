@@ -132,9 +132,12 @@ class AbstractController {
         $result = mysqli_query($conn,
             "SELECT a.abstract_id, a.registration_id, a.paper_title, a.sub_theme,
                     a.type_of_presentation, a.status, a.created_on,
-                    r.full_name, r.email
+                    r.full_name, r.email,
+                    rv.name AS reviewer_name
              FROM `abstract` a
              LEFT JOIN `registration` r ON a.registration_id = r.registration_code
+             LEFT JOIN `assign_reviewer` ar ON a.abstract_id = ar.abstract_id
+             LEFT JOIN `reviewer` rv ON ar.reviewer_id = rv.reviewer_code
              ORDER BY a.abstract_id DESC"
         );
 

@@ -97,6 +97,20 @@ class ConferenceService {
     return (res['data'] as Map<String, dynamic>)['download_url'] as String;
   }
 
+  // ── REVIEWER ─────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getReviewerDashboard() async {
+    final res = await _api.get(ApiConfig.reviewerDashboard);
+    _assertSuccess(res);
+    return res['data'] as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getReviewerAbstracts() async {
+    final res = await _api.get(ApiConfig.reviewerAbstracts);
+    _assertSuccess(res);
+    return (res['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
   // ── ADMIN ─────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getAdminDashboard() async {
@@ -143,6 +157,109 @@ class ConferenceService {
     final res = await _api.get(ApiConfig.adminMessages);
     _assertSuccess(res);
     return (res['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> adminGetGeneratedCerts() async {
+    final res = await _api.get(ApiConfig.adminCerts);
+    _assertSuccess(res);
+    return (res['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> adminGenerateCertificates(
+      String certType, List<String> regCodes) async {
+    final res = await _api.post(ApiConfig.adminGenerateCerts,
+        {'certificate_type': certType, 'users': regCodes});
+    _assertSuccess(res);
+    return res;
+  }
+
+  Future<Map<String, dynamic>> adminRevokeCertificate(String id) async {
+    final res = await _api.delete(ApiConfig.adminRevokeCert(id));
+    _assertSuccess(res);
+    return res;
+  }
+
+  Future<List<Map<String, dynamic>>> adminGetReviewers() async {
+    final res = await _api.get(ApiConfig.adminReviewers);
+    _assertSuccess(res);
+    return (res['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> adminGetReviewer(String id) async {
+    final res = await _api.get(ApiConfig.reviewerById(id));
+    _assertSuccess(res);
+    return res['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> adminAddReviewer(
+      Map<String, dynamic> data) async {
+    final res = await _api.post(ApiConfig.adminReviewers, data);
+    _assertSuccess(res);
+    return res;
+  }
+
+  Future<List<Map<String, dynamic>>> adminGetConferenceRooms() async {
+    final res = await _api.get(ApiConfig.adminConferenceRooms);
+    _assertSuccess(res);
+    return (res['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> adminAddConferenceRoom(
+      Map<String, dynamic> data) async {
+    final res = await _api.post(ApiConfig.adminConferenceRooms, data);
+    _assertSuccess(res);
+    return res;
+  }
+
+  Future<Map<String, dynamic>> adminUpdateConferenceRoom(
+      String id, Map<String, dynamic> data) async {
+    final res = await _api.put(ApiConfig.conferenceRoomById(id), data);
+    _assertSuccess(res);
+    return res;
+  }
+
+  Future<Map<String, dynamic>> adminDeleteConferenceRoom(String id) async {
+    final res = await _api.delete(ApiConfig.conferenceRoomById(id));
+    _assertSuccess(res);
+    return res;
+  }
+
+  Future<List<PreConferenceModel>> adminGetPreconferences() async {
+    final res = await _api.get(ApiConfig.adminPreconf);
+    _assertSuccess(res);
+    final list = res['data'] as List<dynamic>;
+    return list
+        .map((e) => PreConferenceModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> updatePreconfStatus(String id, String status,
+      {String comment = ''}) async {
+    final res = await _api.put(ApiConfig.preconfStatus(id), {
+      'status': status,
+      'comment': comment,
+    });
+    _assertSuccess(res);
+    return res;
+  }
+
+  Future<List<WorkshopModel>> adminGetWorkshops() async {
+    final res = await _api.get(ApiConfig.adminWorkshop);
+    _assertSuccess(res);
+    final list = res['data'] as List<dynamic>;
+    return list
+        .map((e) => WorkshopModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> updateWorkshopStatus(String id, String status,
+      {String comment = ''}) async {
+    final res = await _api.put(ApiConfig.workshopStatus(id), {
+      'status': status,
+      'comment': comment,
+    });
+    _assertSuccess(res);
+    return res;
   }
 
   // ── Helper ────────────────────────────────────────────────────────────────

@@ -18,9 +18,16 @@ class ConferenceProvider extends ChangeNotifier {
   List<WorkshopModel> workshops = [];
   Map<String, dynamic>? certificates;
   Map<String, dynamic>? adminStats;
+  Map<String, dynamic>? reviewerStats;
+  List<Map<String, dynamic>> reviewerAssignedAbstracts = [];
   List<RegistrationModel> allRegistrations = [];
   List<AbstractModel> allAbstracts = [];
+  List<PreConferenceModel> allPreconferences = [];
+  List<WorkshopModel> allWorkshops = [];
+  List<Map<String, dynamic>> allReviewers = [];
+  List<Map<String, dynamic>> allConferenceRooms = [];
   List<Map<String, dynamic>> messages = [];
+  List<Map<String, dynamic>> allGeneratedCerts = [];
 
   bool get loading => _loading;
   String? get error => _error;
@@ -77,6 +84,18 @@ class ConferenceProvider extends ChangeNotifier {
     });
   }
 
+  Future<void> loadReviewerDashboard() async {
+    await _run(() async {
+      reviewerStats = await _service.getReviewerDashboard();
+    });
+  }
+
+  Future<void> loadReviewerAbstracts() async {
+    await _run(() async {
+      reviewerAssignedAbstracts = await _service.getReviewerAbstracts();
+    });
+  }
+
   Future<void> loadAllRegistrations() async {
     await _run(() async {
       allRegistrations = await _service.adminGetRegistrations();
@@ -99,10 +118,78 @@ class ConferenceProvider extends ChangeNotifier {
         () => _service.updateAbstractStatus(id, status, comment: comment));
   }
 
+  Future<void> loadAllPreconferences() async {
+    await _run(() async {
+      allPreconferences = await _service.adminGetPreconferences();
+    });
+  }
+
+  Future<bool> updatePreconfStatus(String id, String status,
+      {String comment = ''}) async {
+    return await _runBool(
+        () => _service.updatePreconfStatus(id, status, comment: comment));
+  }
+
+  Future<void> loadAllWorkshops() async {
+    await _run(() async {
+      allWorkshops = await _service.adminGetWorkshops();
+    });
+  }
+
+  Future<bool> updateWorkshopStatus(String id, String status,
+      {String comment = ''}) async {
+    return await _runBool(
+        () => _service.updateWorkshopStatus(id, status, comment: comment));
+  }
+
   Future<void> loadMessages() async {
     await _run(() async {
       messages = await _service.adminGetMessages();
     });
+  }
+
+  Future<void> loadAllGeneratedCerts() async {
+    await _run(() async {
+      allGeneratedCerts = await _service.adminGetGeneratedCerts();
+    });
+  }
+
+  Future<bool> generateCertificates(
+      String certType, List<String> regCodes) async {
+    return await _runBool(
+        () => _service.adminGenerateCertificates(certType, regCodes));
+  }
+
+  Future<bool> revokeCertificate(String id) async {
+    return await _runBool(() => _service.adminRevokeCertificate(id));
+  }
+
+  Future<void> loadAllReviewers() async {
+    await _run(() async {
+      allReviewers = await _service.adminGetReviewers();
+    });
+  }
+
+  Future<bool> addReviewer(Map<String, dynamic> data) async {
+    return await _runBool(() => _service.adminAddReviewer(data));
+  }
+
+  Future<void> loadAllConferenceRooms() async {
+    await _run(() async {
+      allConferenceRooms = await _service.adminGetConferenceRooms();
+    });
+  }
+
+  Future<bool> addConferenceRoom(Map<String, dynamic> data) async {
+    return await _runBool(() => _service.adminAddConferenceRoom(data));
+  }
+
+  Future<bool> updateConferenceRoom(String id, Map<String, dynamic> data) async {
+    return await _runBool(() => _service.adminUpdateConferenceRoom(id, data));
+  }
+
+  Future<bool> deleteConferenceRoom(String id) async {
+    return await _runBool(() => _service.adminDeleteConferenceRoom(id));
   }
 
   // ── Internal helpers ───────────────────────────────────────────────────

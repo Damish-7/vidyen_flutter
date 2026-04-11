@@ -9,6 +9,7 @@ class AbstractModel {
   final String paperAbstract;
   final String status;
   final String createdOn;
+  final String reviewerName;
   final List<AuthorModel> authors;
 
   AbstractModel({
@@ -22,6 +23,7 @@ class AbstractModel {
     required this.paperAbstract,
     required this.status,
     required this.createdOn,
+    this.reviewerName = '',
     this.authors = const [],
   });
 
@@ -37,17 +39,18 @@ class AbstractModel {
       paperAbstract: json['paper_abstract']?.toString() ?? '',
       status: json['status']?.toString() ?? '0',
       createdOn: json['created_on']?.toString() ?? '',
+      reviewerName: json['reviewer_name']?.toString() ?? '',
     );
   }
 
   String get statusLabel {
     switch (status) {
       case '2':
-        return 'Evaluated';
+        return 'Reviewed';
       case '1':
-        return 'Under Review';
+        return 'Assigned';
       default:
-        return 'Submitted';
+        return 'Not Assigned';
     }
   }
 }
