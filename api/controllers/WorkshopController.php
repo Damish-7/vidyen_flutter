@@ -198,4 +198,47 @@ class WorkshopController {
         mysqli_query($conn, "UPDATE `workshop` SET status = '$status' WHERE workshop_id = '$wId'");
         Response::success(null, 'Status updated');
     }
+
+    /**
+     * POST /api/admin/workshop/{id}/assign-reviewer
+     * Assign a Workshop Reviewer to a workshop submission
+     */
+    public function assignReviewer(string $wId): void {
+        Auth::requireRole('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+        $conn  = getDB();
+        $esc   = fn($v) => mysqli_real_escape_string($conn, $v ?? '');
+
+        $reviewerCode = $esc($input['reviewer_code'] ?? '');
+        if (!$reviewerCode) Response::error('reviewer_code is required');
+
+        $wId = $esc($wId);
+
+        // Fetch the registration_id for this workshop
+        $wRow = mysqli_fetch_assoc(
+            mysqli_query($conn, "SELECT registration_id FROM `workshop` WHERE workshop_id = '$wId' LIMIT 1")
+        );
+        if (!$wRow) Response::notFound('Workshop not found');
+        $regId = $esc($wRow['registration_id']);
+
+        // Remove prior assignment for this workshop if any
+        mysqli_query($conn, "DELETE FROM `assign_reviewer` WHERE abstract_id = '$wId'");
+
+        // Insert new assignment
+        mysqli_query($conn,
+            "INSERT INTO `assign_reviewer` (reviewer_id, registration_id, abstract_id, status)
+             VALUES ('$reviewerCode', '$regId', '$wId', 0)"
+        );
+
+        if (mysqli_affected_rows($conn) === 0) {
+            Response::serverError('Failed to assign reviewer: ' . mysqli_error($conn));
+        }
+
+        // Update workshop status to Under Review (1)
+        mysqli_query($conn,
+            "UPDATE `workshop` SET status = 1 WHERE workshop_id = '$wId'"
+        );
+
+        Response::success(null, 'Reviewer assigned successfully');
+    }
 }

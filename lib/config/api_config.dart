@@ -41,6 +41,8 @@ class ApiConfig {
   static const String adminAbstracts = '$baseUrl/admin/abstracts';
   static String abstractStatus(String id) =>
       '$baseUrl/admin/abstracts/$id/status';
+  static String abstractAssignReviewer(String id) =>
+      '$baseUrl/admin/abstracts/$id/assign-reviewer';
   static const String adminPreconf = '$baseUrl/admin/preconference';
   static String preconfStatus(String id) =>
       '$baseUrl/admin/preconference/$id/status';
@@ -49,6 +51,8 @@ class ApiConfig {
   static const String adminWorkshop = '$baseUrl/admin/workshop';
   static String workshopStatus(String id) =>
       '$baseUrl/admin/workshop/$id/status';
+  static String workshopAssignReviewer(String id) =>
+      '$baseUrl/admin/workshop/$id/assign-reviewer';
   static const String adminCerts = '$baseUrl/admin/certificates';
   static const String adminGenerateCerts = '$baseUrl/admin/certificates/generate';
   static String adminRevokeCert(String id) => '$baseUrl/admin/certificates/$id';

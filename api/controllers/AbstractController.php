@@ -163,4 +163,47 @@ class AbstractController {
         mysqli_query($conn, "UPDATE `abstract` SET status = '$status' WHERE abstract_id = '$abstractId'");
         Response::success(null, 'Abstract status updated');
     }
+
+    /**
+     * POST /api/admin/abstracts/{id}/assign-reviewer
+     * Assign an Abstract Reviewer to an abstract submission
+     */
+    public function assignReviewer(string $abstractId): void {
+        Auth::requireRole('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+        $conn  = getDB();
+        $esc   = fn($v) => mysqli_real_escape_string($conn, $v ?? '');
+
+        $reviewerCode = $esc($input['reviewer_code'] ?? '');
+        if (!$reviewerCode) Response::error('reviewer_code is required');
+
+        $abstractId = $esc($abstractId);
+
+        // Fetch the registration_id for this abstract
+        $aRow = mysqli_fetch_assoc(
+            mysqli_query($conn, "SELECT registration_id FROM `abstract` WHERE abstract_id = '$abstractId' LIMIT 1")
+        );
+        if (!$aRow) Response::notFound('Abstract not found');
+        $regId = $esc($aRow['registration_id']);
+
+        // Remove prior assignment for this abstract if any
+        mysqli_query($conn, "DELETE FROM `assign_reviewer` WHERE abstract_id = '$abstractId'");
+
+        // Insert new assignment
+        mysqli_query($conn,
+            "INSERT INTO `assign_reviewer` (reviewer_id, registration_id, abstract_id, status)
+             VALUES ('$reviewerCode', '$regId', '$abstractId', 0)"
+        );
+
+        if (mysqli_affected_rows($conn) === 0) {
+            Response::serverError('Failed to assign reviewer: ' . mysqli_error($conn));
+        }
+
+        // Update abstract status to Under Review (1)
+        mysqli_query($conn,
+            "UPDATE `abstract` SET status = 1 WHERE abstract_id = '$abstractId'"
+        );
+
+        Response::success(null, 'Reviewer assigned successfully');
+    }
 }

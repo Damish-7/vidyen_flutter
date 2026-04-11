@@ -153,6 +153,14 @@ class ConferenceService {
     return res;
   }
 
+  Future<Map<String, dynamic>> adminAssignAbstractReviewer(
+      String abstractId, String reviewerCode) async {
+    final res = await _api.post(
+        ApiConfig.abstractAssignReviewer(abstractId), {'reviewer_code': reviewerCode});
+    _assertSuccess(res);
+    return res;
+  }
+
   Future<List<Map<String, dynamic>>> adminGetMessages() async {
     final res = await _api.get(ApiConfig.adminMessages);
     _assertSuccess(res);
@@ -266,6 +274,14 @@ class ConferenceService {
       'status': status,
       'comment': comment,
     });
+    _assertSuccess(res);
+    return res;
+  }
+
+  Future<Map<String, dynamic>> adminAssignWorkshopReviewer(
+      String workshopId, String reviewerCode) async {
+    final res = await _api.post(
+        ApiConfig.workshopAssignReviewer(workshopId), {'reviewer_code': reviewerCode});
     _assertSuccess(res);
     return res;
   }

@@ -171,8 +171,9 @@ if ($seg0 === 'admin') {
 
     if ($seg1 === 'abstracts') {
         $ctrl = loadController('AbstractController');
-        if ($method === 'GET' && !$seg2)                    { $ctrl->listAll();           exit(); }
-        if ($method === 'PUT' && $seg2 && $seg3 === 'status') { $ctrl->updateStatus($seg2); exit(); }
+        if ($method === 'GET'  && !$seg2)                              { $ctrl->listAll();             exit(); }
+        if ($method === 'PUT'  && $seg2 && $seg3 === 'status')         { $ctrl->updateStatus($seg2);   exit(); }
+        if ($method === 'POST' && $seg2 && $seg3 === 'assign-reviewer') { $ctrl->assignReviewer($seg2); exit(); }
         Response::notFound('Admin abstracts route not found');
     }
 
@@ -186,8 +187,9 @@ if ($seg0 === 'admin') {
 
     if ($seg1 === 'workshop') {
         $ctrl = loadController('WorkshopController');
-        if ($method === 'GET' && !$seg2)                    { $ctrl->listAll();           exit(); }
-        if ($method === 'PUT' && $seg2 && $seg3 === 'status') { $ctrl->updateStatus($seg2); exit(); }
+        if ($method === 'GET'  && !$seg2)                              { $ctrl->listAll();             exit(); }
+        if ($method === 'PUT'  && $seg2 && $seg3 === 'status')         { $ctrl->updateStatus($seg2);   exit(); }
+        if ($method === 'POST' && $seg2 && $seg3 === 'assign-reviewer') { $ctrl->assignReviewer($seg2); exit(); }
         Response::notFound('Admin workshop route not found');
     }
 

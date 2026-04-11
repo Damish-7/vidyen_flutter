@@ -19,11 +19,14 @@ class _AdminAbstractDetailScreenState
   String? _error;
   Map<String, dynamic>? _abstract;
   List<dynamic> _authors = [];
+  List<Map<String, dynamic>> _reviewers = [];
+  bool _assigning = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadReviewers();
   }
 
   Future<void> _load() async {
@@ -46,8 +49,98 @@ class _AdminAbstractDetailScreenState
     }
   }
 
+  Future<void> _loadReviewers() async {
+    try {
+      final all = await _service.adminGetReviewers();
+      setState(() {
+        _reviewers = all
+            .where((r) =>
+                (r['review_type'] ?? '').toString().toLowerCase().contains('abstract'))
+            .toList();
+        if (_reviewers.isEmpty) _reviewers = all;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _showAssignDialog() async {
+    if (_reviewers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No reviewers available')),
+      );
+      return;
+    }
+
+    String? selected;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: const Text('Assign Reviewer'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _reviewers.length,
+              itemBuilder: (_, i) {
+                final r = _reviewers[i];
+                final code = r['reviewer_code']?.toString() ?? '';
+                return RadioListTile<String>(
+                  value: code,
+                  groupValue: selected,
+                  onChanged: (v) => setDlg(() => selected = v),
+                  title: Text(r['name']?.toString() ?? code,
+                      style: const TextStyle(fontSize: 13)),
+                  subtitle: Text(r['designation']?.toString() ?? '',
+                      style: const TextStyle(fontSize: 11)),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white),
+              onPressed: selected == null
+                  ? null
+                  : () async {
+                      Navigator.pop(ctx);
+                      await _assignReviewer(selected!);
+                    },
+              child: const Text('Assign'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _assignReviewer(String reviewerCode) async {
+    setState(() => _assigning = true);
+    try {
+      await _service.adminAssignAbstractReviewer(widget.abstractId, reviewerCode);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reviewer assigned successfully')),
+      );
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _assigning = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final status = _abstract?['status']?.toString() ?? '';
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.abstractId),
@@ -125,6 +218,29 @@ class _AdminAbstractDetailScreenState
                         ),
                       ),
                     ),
+      bottomNavigationBar: (!_loading && _abstract != null && status == '0')
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: _assigning ? null : _showAssignDialog,
+                  icon: _assigning
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.person_add_alt_1),
+                  label: Text(_assigning ? 'Assigning…' : 'Assign Reviewer'),
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
