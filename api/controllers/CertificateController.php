@@ -151,7 +151,7 @@ class CertificateController {
      * Body: { "certificate_type": "...", "users": ["REG001", "REG002", ...] }
      */
     public function generate(): void {
-        Auth::requireRole('admin');
+        $auth  = Auth::requireRole('admin');
         $input = json_decode(file_get_contents('php://input'), true);
         $conn  = getDB();
 
@@ -170,27 +170,27 @@ class CertificateController {
         ];
         if (!in_array($certType, $allowedTypes)) Response::error('Invalid certificate type');
 
-        $certType = mysqli_real_escape_string($conn, $certType);
-        $today    = date('d-m-Y');
+        $adminId  = $auth['user_id'];
         $count    = 0;
 
-        foreach ($users as $regCode) {
-            $regCode = trim((string)$regCode);
-            if (empty($regCode)) continue;
-            $regCode = mysqli_real_escape_string($conn, $regCode);
-
-            // Upsert: skip if already exists
-            $exists = mysqli_fetch_assoc(mysqli_query($conn,
-                "SELECT id FROM `certificate_generated`
-                 WHERE registration_code = '$regCode' AND certificate_type = '$certType' LIMIT 1"
-            ));
-            if ($exists) continue;
-
-            mysqli_query($conn,
-                "INSERT INTO `certificate_generated` (registration_code, certificate_type, generated_on)
-                 VALUES ('$regCode', '$certType', '$today')"
+        try {
+            $stmt = mysqli_prepare($conn,
+                "INSERT INTO `certificate_generated` (registration_code, certificate_type, generated_by)
+                 VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE generated_by = ?, generated_date = NOW()"
             );
-            if (mysqli_affected_rows($conn) > 0) $count++;
+
+            foreach ($users as $regCode) {
+                $regCode = trim((string)$regCode);
+                if (empty($regCode)) continue;
+
+                mysqli_stmt_bind_param($stmt, 'ssss', $regCode, $certType, $adminId, $adminId);
+                if (mysqli_stmt_execute($stmt)) $count++;
+            }
+
+            mysqli_stmt_close($stmt);
+        } catch (\Throwable $e) {
+            Response::serverError('Database error: ' . $e->getMessage());
         }
 
         Response::success(['generated' => $count], "Certificates generated for $count participant(s)");

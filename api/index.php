@@ -48,6 +48,17 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/helpers/JWTHelper.php';
 require_once __DIR__ . '/helpers/Response.php';
 
+// Global exception handler — ensures all unhandled errors return JSON
+set_exception_handler(function (\Throwable $e) {
+    http_response_code(500);
+    echo json_encode([
+        'status'  => false,
+        'message' => 'Server error: ' . $e->getMessage(),
+        'data'    => null
+    ]);
+    exit();
+});
+
 // Get request path and method
 $requestUri    = $_SERVER['REQUEST_URI'];
 $scriptName    = dirname($_SERVER['SCRIPT_NAME']);

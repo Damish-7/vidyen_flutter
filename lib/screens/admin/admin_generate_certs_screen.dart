@@ -206,6 +206,16 @@ class _AdminGenerateCertsScreenState extends State<AdminGenerateCertsScreen> {
           Row(
             children: [
               _SmallButton(
+                label: 'Select All',
+                onTap: () => setState(() {
+                  _selected.addAll(context
+                      .read<ConferenceProvider>()
+                      .allRegistrations
+                      .map((r) => r.registrationCode));
+                }),
+              ),
+              const SizedBox(width: 8),
+              _SmallButton(
                 label: 'Select Visible',
                 onTap: () => setState(() {
                   final filtered = _filtered(
@@ -411,9 +421,14 @@ class _CertStatusBadge extends StatelessWidget {
     // Check if we have entries loaded; if list is empty treat as unknown
     if (certs.isEmpty) return const SizedBox.shrink();
 
-    final already = certs.any((c) =>
-        c['registration_code']?.toString() == regCode &&
-        c['certificate_type']?.toString() == certType);
+    final match = certs.cast<Map<String, dynamic>?>().firstWhere(
+      (c) =>
+          c!['registration_code']?.toString() == regCode &&
+          c['certificate_type']?.toString() == certType,
+      orElse: () => null,
+    );
+    final already = match != null;
+    final date = already ? (match['generated_date']?.toString() ?? '') : '';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -424,7 +439,9 @@ class _CertStatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        already ? 'Generated' : 'Pending',
+        already
+            ? (date.isNotEmpty ? 'Generated on $date' : 'Generated')
+            : 'Pending',
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
