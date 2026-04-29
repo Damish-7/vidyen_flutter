@@ -16,6 +16,7 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
   String? _error;
   List<Map<String, String>> _certificates = [];
   String _regCode = '';
+  bool _hasCoAuthor = false;
 
   @override
   void initState() {
@@ -38,7 +39,9 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
       final generatedCerts = (data['generated_certificates'] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList() ?? [];
-      
+
+      _hasCoAuthor = generatedCerts.contains('co_author_certificate');
+
       final hasPaper = data['has_paper_presentation'] == true;
       final hasPoster = data['has_poster_presentation'] == true;
       final hasYenvision = data['has_yenvision_lightning_talk'] == true;
@@ -199,8 +202,11 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _certificates.length,
+              itemCount: _certificates.length + (_hasCoAuthor ? 1 : 0),
               itemBuilder: (_, i) {
+                if (_hasCoAuthor && i == _certificates.length) {
+                  return _CoAuthorCard(regCode: _regCode);
+                }
                 final cert = _certificates[i];
                 return _CertCard(
                   cert: cert,
@@ -260,6 +266,180 @@ class _CertCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Download failed: ${e.toString()}'),
+            backgroundColor: AppTheme.danger,
+          ),
+        );
+      }
+    }
+  }
+}
+
+// ── Co-Author card ────────────────────────────────────────────────────────────
+
+class _CoAuthorCard extends StatefulWidget {
+  final String regCode;
+  const _CoAuthorCard({required this.regCode});
+
+  @override
+  State<_CoAuthorCard> createState() => _CoAuthorCardState();
+}
+
+class _CoAuthorCardState extends State<_CoAuthorCard> {
+  bool _loading = false;
+
+  Future<void> _showCoAuthors() async {
+    setState(() => _loading = true);
+    try {
+      final coAuthors = await ConferenceService().getMyCertCoAuthors();
+      if (!mounted) return;
+      setState(() => _loading = false);
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (_) => _CoAuthorsSheet(coAuthors: coAuthors),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppTheme.danger,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppTheme.success.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.group_outlined,
+            color: AppTheme.success,
+            size: 28,
+          ),
+        ),
+        title: const Text('Co-Author Certificates',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('Download certificates for your co-authors',
+            style: TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+        trailing: _loading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.chevron_right, color: AppTheme.primary),
+        onTap: _loading ? null : _showCoAuthors,
+      ),
+    );
+  }
+}
+
+class _CoAuthorsSheet extends StatelessWidget {
+  final List<Map<String, dynamic>> coAuthors;
+  const _CoAuthorsSheet({required this.coAuthors});
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (_, controller) => Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Co-Author Certificates',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Download your co-author certificates below',
+                  style: TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          if (coAuthors.isEmpty)
+            const Expanded(
+              child: Center(
+                child: Text('No co-authors found',
+                    style: TextStyle(color: AppTheme.textGrey)),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.separated(
+                controller: controller,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: coAuthors.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, i) {
+                  final name = coAuthors[i]['full_name']?.toString() ?? '';
+                  return ListTile(
+                    leading: const Icon(Icons.person_outline,
+                        color: AppTheme.primary),
+                    title: Text(name,
+                        style:
+                            const TextStyle(fontWeight: FontWeight.w500)),
+                    subtitle: const Text('Certificate for co-authors',
+                        style: TextStyle(
+                            color: AppTheme.textGrey, fontSize: 12)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.download,
+                          color: AppTheme.primary),
+                      tooltip: 'Download',
+                      onPressed: () => _download(context, name),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _download(BuildContext context, String name) async {
+    try {
+      final url =
+          '${ApiConfig.baseUrl}/generate_co_author_certificate_download.php'
+          '?name=${Uri.encodeComponent(name)}';
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download failed: $e'),
             backgroundColor: AppTheme.danger,
           ),
         );

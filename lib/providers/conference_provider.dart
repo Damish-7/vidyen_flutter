@@ -28,6 +28,7 @@ class ConferenceProvider extends ChangeNotifier {
   List<Map<String, dynamic>> allConferenceRooms = [];
   List<Map<String, dynamic>> messages = [];
   List<Map<String, dynamic>> allGeneratedCerts = [];
+  List<Map<String, dynamic>> allCoAuthors = [];
 
   bool get loading => _loading;
   String? get error => _error;
@@ -151,6 +152,12 @@ class ConferenceProvider extends ChangeNotifier {
   Future<void> loadAllGeneratedCerts() async {
     await _run(() async {
       allGeneratedCerts = await _service.adminGetGeneratedCerts();
+    });
+  }
+
+  Future<void> loadAllCoAuthors() async {
+    await _run(() async {
+      allCoAuthors = await _service.adminGetCoAuthors();
     });
   }
 

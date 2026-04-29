@@ -30,6 +30,7 @@ class ApiConfig {
 
   // Certificates
   static const String myCertificates = '$baseUrl/certificates/my';
+  static const String certCoAuthors = '$baseUrl/certificates/co-authors';
   static String certDownload(String type, String regCode) =>
       '$baseUrl/certificates/$type/$regCode';
 
@@ -56,6 +57,7 @@ class ApiConfig {
   static const String adminCerts = '$baseUrl/admin/certificates';
   static const String adminGenerateCerts = '$baseUrl/admin/certificates/generate';
   static String adminRevokeCert(String id) => '$baseUrl/admin/certificates/$id';
+  static const String adminCoAuthors = '$baseUrl/admin/co-authors';
   static const String adminUsers = '$baseUrl/admin/users';
   static String toggleUser(String id) =>
       '$baseUrl/admin/users/$id/toggle-status';

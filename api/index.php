@@ -142,8 +142,9 @@ if ($seg0 === 'reviewer') {
 // CERTIFICATES routes  /certificates/...
 if ($seg0 === 'certificates') {
     $ctrl = loadController('CertificateController');
-    if ($method === 'GET' && $seg1 === 'my')   { $ctrl->myCertificates();    exit(); }
-    if ($method === 'GET' && $seg1 && $seg2)   { $ctrl->downloadInfo($seg1, $seg2); exit(); }
+    if ($method === 'GET' && $seg1 === 'my')           { $ctrl->myCertificates();             exit(); }
+    if ($method === 'GET' && $seg1 === 'co-authors')   { $ctrl->myCoAuthors();                exit(); }
+    if ($method === 'GET' && $seg1 && $seg2)           { $ctrl->downloadInfo($seg1, $seg2);   exit(); }
     Response::notFound('Certificates route not found');
 }
 
@@ -210,6 +211,12 @@ if ($seg0 === 'admin') {
         if ($method === 'POST'   && $seg2 === 'generate')    { $ctrl->generate();       exit(); }
         if ($method === 'DELETE' && $seg2)                   { $ctrl->revoke($seg2);    exit(); }
         Response::notFound('Admin certificates route not found');
+    }
+
+    if ($seg1 === 'co-authors') {
+        $ctrl = loadController('CertificateController');
+        if ($method === 'GET') { $ctrl->listCoAuthors(); exit(); }
+        Response::notFound('Co-authors route not found');
     }
 
     if ($seg1 === 'users') {

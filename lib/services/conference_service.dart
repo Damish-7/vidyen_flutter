@@ -91,6 +91,12 @@ class ConferenceService {
     return res['data'] as Map<String, dynamic>;
   }
 
+  Future<List<Map<String, dynamic>>> getMyCertCoAuthors() async {
+    final res = await _api.get(ApiConfig.certCoAuthors);
+    _assertSuccess(res);
+    return (res['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
   Future<String> getCertDownloadUrl(String type, String regCode) async {
     final res = await _api.get(ApiConfig.certDownload(type, regCode));
     _assertSuccess(res);
@@ -163,6 +169,12 @@ class ConferenceService {
 
   Future<List<Map<String, dynamic>>> adminGetMessages() async {
     final res = await _api.get(ApiConfig.adminMessages);
+    _assertSuccess(res);
+    return (res['data'] as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> adminGetCoAuthors() async {
+    final res = await _api.get(ApiConfig.adminCoAuthors);
     _assertSuccess(res);
     return (res['data'] as List<dynamic>).cast<Map<String, dynamic>>();
   }

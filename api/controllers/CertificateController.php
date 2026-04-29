@@ -79,6 +79,61 @@ class CertificateController {
     }
 
     /**
+     * GET /api/certificates/co-authors
+     * Get co-authors list for the current participant
+     */
+    public function myCoAuthors(): void {
+        $auth = Auth::requireRole('participant');
+        $conn = getDB();
+        $uid  = mysqli_real_escape_string($conn, $auth['user_id']);
+
+        $emailQ   = mysqli_query($conn, "SELECT user_email FROM `login` WHERE user_id = '$uid' LIMIT 1");
+        $loginRow = mysqli_fetch_assoc($emailQ);
+        if (!$loginRow) Response::notFound('User not found');
+
+        $email   = mysqli_real_escape_string($conn, $loginRow['user_email']);
+        $regQ    = mysqli_query($conn, "SELECT registration_code FROM registration WHERE email = '$email' LIMIT 1");
+        $regRow  = mysqli_fetch_assoc($regQ);
+        if (!$regRow) Response::notFound('Registration not found');
+
+        $regCode = mysqli_real_escape_string($conn, $regRow['registration_code']);
+
+        $result = @mysqli_query($conn,
+            "SELECT first_name, middle_name, last_name
+             FROM author_details
+             WHERE registration_id = '$regCode'
+             AND FIND_IN_SET('Co Author', REPLACE(author_type, ', ', ','))"
+        );
+
+        $coAuthors = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $firstNames  = array_map('trim', explode(',', $row['first_name']));
+                $middleNames = array_map('trim', explode(',', $row['middle_name']));
+                $lastNames   = array_map('trim', explode(',', $row['last_name']));
+
+                // Remove first element (main/presenting author)
+                array_shift($firstNames);
+                array_shift($middleNames);
+                array_shift($lastNames);
+
+                $count = count($firstNames);
+                for ($i = 0; $i < $count; $i++) {
+                    $fname = $firstNames[$i] ?? '';
+                    $mname = $middleNames[$i] ?? '';
+                    $lname = $lastNames[$i] ?? '';
+                    if ($fname !== '') {
+                        $fullName = trim('Dr. ' . $fname . ' ' . $mname . ' ' . $lname);
+                        $coAuthors[] = ['full_name' => $fullName];
+                    }
+                }
+            }
+        }
+
+        Response::success($coAuthors);
+    }
+
+    /**
      * GET /api/certificates/{type}/{regCode}
      * Download certificate (returns download URL)
      */
@@ -167,6 +222,7 @@ class CertificateController {
             'first_place_paper', 'second_place_paper',
             'first_place_poster', 'second_place_poster',
             'first_place_yenvision', 'second_place_yenvision',
+            'co_author_certificate',
         ];
         if (!in_array($certType, $allowedTypes)) Response::error('Invalid certificate type');
 
@@ -194,6 +250,34 @@ class CertificateController {
         }
 
         Response::success(['generated' => $count], "Certificates generated for $count participant(s)");
+    }
+
+    /**
+     * GET /api/admin/co-authors
+     * List all co-authors from author_details (admin)
+     */
+    public function listCoAuthors(): void {
+        Auth::requireRole('admin');
+        $conn = getDB();
+
+        $result = @mysqli_query($conn,
+            "SELECT
+                registration_id,
+                CONCAT(
+                    SUBSTRING_INDEX(first_name, ',', 1), ' ',
+                    SUBSTRING_INDEX(middle_name, ',', 1), ' ',
+                    SUBSTRING_INDEX(last_name, ',', 1)
+                ) AS full_name,
+                SUBSTRING_INDEX(author_email, ',', 1) AS author_email
+             FROM author_details
+             WHERE LOWER(author_type) LIKE '%co author%'"
+        );
+
+        $rows = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) $rows[] = $row;
+        }
+        Response::success($rows);
     }
 
     /**

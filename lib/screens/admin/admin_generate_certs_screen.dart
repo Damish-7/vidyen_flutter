@@ -22,6 +22,7 @@ const _certTypes = [
   _CertType('second_place_poster', '2nd Place Poster Award'),
   _CertType('first_place_yenvision', '1st Place YenVision Award'),
   _CertType('second_place_yenvision', '2nd Place YenVision Award'),
+  _CertType('co_author_certificate', 'Co-Author Certificate'),
 ];
 
 class _CertType {
@@ -52,8 +53,11 @@ class _AdminGenerateCertsScreenState extends State<AdminGenerateCertsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ConferenceProvider>().loadAllRegistrations();
       context.read<ConferenceProvider>().loadAllGeneratedCerts();
+      context.read<ConferenceProvider>().loadAllCoAuthors();
     });
   }
+
+  bool get _isCoAuthorMode => _selectedType == 'co_author_certificate';
 
   List<RegistrationModel> _filtered(List<RegistrationModel> all) {
     if (_search.isEmpty) return all;
@@ -63,6 +67,18 @@ class _AdminGenerateCertsScreenState extends State<AdminGenerateCertsScreen> {
             r.registrationCode.toLowerCase().contains(q) ||
             r.fullName.toLowerCase().contains(q) ||
             r.email.toLowerCase().contains(q))
+        .toList();
+  }
+
+  List<Map<String, dynamic>> _filteredCoAuthors(
+      List<Map<String, dynamic>> all) {
+    if (_search.isEmpty) return all;
+    final q = _search.toLowerCase();
+    return all
+        .where((c) =>
+            (c['registration_id']?.toString() ?? '').toLowerCase().contains(q) ||
+            (c['full_name']?.toString() ?? '').toLowerCase().contains(q) ||
+            (c['author_email']?.toString() ?? '').toLowerCase().contains(q))
         .toList();
   }
 
@@ -118,19 +134,24 @@ class _AdminGenerateCertsScreenState extends State<AdminGenerateCertsScreen> {
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ConferenceProvider>();
-    final all = prov.allRegistrations;
-    final filtered = _filtered(all);
+    final isCoAuthor = _isCoAuthorMode;
+    final allRegs = prov.allRegistrations;
+    final allCoAuthors = prov.allCoAuthors;
+    final filteredRegs = _filtered(allRegs);
+    final filteredCoAuthors = _filteredCoAuthors(allCoAuthors);
+    final visible = isCoAuthor ? filteredCoAuthors.length : filteredRegs.length;
+    final total = isCoAuthor ? allCoAuthors.length : allRegs.length;
     final canGenerate =
         _selectedType != null && _selected.isNotEmpty && !_generating;
 
     return Scaffold(
       body: Column(
         children: [
-          _buildHeader(filtered.length, all.length),
-          if (prov.loading && all.isEmpty)
+          _buildHeader(prov, visible, total),
+          if (prov.loading && total == 0)
             const Expanded(
                 child: LoadingWidget(message: 'Loading participants...'))
-          else if (prov.error != null && all.isEmpty)
+          else if (prov.error != null && total == 0)
             Expanded(
                 child: ErrorWidget2(
                     message: prov.error!,
@@ -139,20 +160,34 @@ class _AdminGenerateCertsScreenState extends State<AdminGenerateCertsScreen> {
           else
             Expanded(
               child: RefreshIndicator(
-                onRefresh: () =>
-                    context.read<ConferenceProvider>().loadAllRegistrations(),
-                child: _ParticipantTable(
-                  rows: filtered,
-                  selected: _selected,
-                  certType: _selectedType,
-                  onToggle: (code) {
-                    setState(() {
-                      _selected.contains(code)
-                          ? _selected.remove(code)
-                          : _selected.add(code);
-                    });
-                  },
-                ),
+                onRefresh: () => isCoAuthor
+                    ? context.read<ConferenceProvider>().loadAllCoAuthors()
+                    : context.read<ConferenceProvider>().loadAllRegistrations(),
+                child: isCoAuthor
+                    ? _CoAuthorTable(
+                        rows: filteredCoAuthors,
+                        selected: _selected,
+                        certType: _selectedType,
+                        onToggle: (id) {
+                          setState(() {
+                            _selected.contains(id)
+                                ? _selected.remove(id)
+                                : _selected.add(id);
+                          });
+                        },
+                      )
+                    : _ParticipantTable(
+                        rows: filteredRegs,
+                        selected: _selected,
+                        certType: _selectedType,
+                        onToggle: (code) {
+                          setState(() {
+                            _selected.contains(code)
+                                ? _selected.remove(code)
+                                : _selected.add(code);
+                          });
+                        },
+                      ),
               ),
             ),
           _buildFooter(canGenerate),
@@ -161,7 +196,7 @@ class _AdminGenerateCertsScreenState extends State<AdminGenerateCertsScreen> {
     );
   }
 
-  Widget _buildHeader(int visible, int total) {
+  Widget _buildHeader(ConferenceProvider prov, int visible, int total) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -183,7 +218,10 @@ class _AdminGenerateCertsScreenState extends State<AdminGenerateCertsScreen> {
                         style: const TextStyle(fontSize: 13),
                         overflow: TextOverflow.ellipsis)))
                 .toList(),
-            onChanged: (v) => setState(() => _selectedType = v),
+            onChanged: (v) => setState(() {
+              _selectedType = v;
+              _selected.clear();
+            }),
           ),
           const SizedBox(height: 10),
           // Search bar
@@ -208,19 +246,31 @@ class _AdminGenerateCertsScreenState extends State<AdminGenerateCertsScreen> {
               _SmallButton(
                 label: 'Select All',
                 onTap: () => setState(() {
-                  _selected.addAll(context
-                      .read<ConferenceProvider>()
-                      .allRegistrations
-                      .map((r) => r.registrationCode));
+                  if (_isCoAuthorMode) {
+                    _selected.addAll(prov.allCoAuthors
+                        .map((c) => c['registration_id']?.toString() ?? '')
+                        .where((s) => s.isNotEmpty));
+                  } else {
+                    _selected.addAll(
+                        prov.allRegistrations.map((r) => r.registrationCode));
+                  }
                 }),
               ),
               const SizedBox(width: 8),
               _SmallButton(
                 label: 'Select Visible',
                 onTap: () => setState(() {
-                  final filtered = _filtered(
-                      context.read<ConferenceProvider>().allRegistrations);
-                  _selected.addAll(filtered.map((r) => r.registrationCode));
+                  if (_isCoAuthorMode) {
+                    final filtered =
+                        _filteredCoAuthors(prov.allCoAuthors);
+                    _selected.addAll(filtered
+                        .map((c) => c['registration_id']?.toString() ?? '')
+                        .where((s) => s.isNotEmpty));
+                  } else {
+                    final filtered = _filtered(prov.allRegistrations);
+                    _selected
+                        .addAll(filtered.map((r) => r.registrationCode));
+                  }
                 }),
               ),
               const SizedBox(width: 8),
@@ -446,6 +496,139 @@ class _CertStatusBadge extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.bold,
           color: already ? AppTheme.success : AppTheme.warning,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Co-author table ───────────────────────────────────────────────────────────
+
+class _CoAuthorTable extends StatelessWidget {
+  final List<Map<String, dynamic>> rows;
+  final Set<String> selected;
+  final String? certType;
+  final ValueChanged<String> onToggle;
+
+  const _CoAuthorTable({
+    required this.rows,
+    required this.selected,
+    required this.certType,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) {
+      return const Center(
+          child: Text('No co-authors found',
+              style: TextStyle(color: AppTheme.textGrey)));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      itemCount: rows.length,
+      itemBuilder: (_, i) {
+        final c = rows[i];
+        final id = c['registration_id']?.toString() ?? '';
+        return _CoAuthorTile(
+          serial: i + 1,
+          data: c,
+          isSelected: selected.contains(id),
+          certType: certType,
+          onToggle: () => onToggle(id),
+        );
+      },
+    );
+  }
+}
+
+class _CoAuthorTile extends StatelessWidget {
+  final int serial;
+  final Map<String, dynamic> data;
+  final bool isSelected;
+  final String? certType;
+  final VoidCallback onToggle;
+
+  const _CoAuthorTile({
+    required this.serial,
+    required this.data,
+    required this.isSelected,
+    required this.certType,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final id = data['registration_id']?.toString() ?? '';
+    final name = data['full_name']?.toString() ?? '';
+    final email = data['author_email']?.toString() ?? '';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      color: isSelected ? AppTheme.primary.withOpacity(0.06) : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: isSelected ? AppTheme.primary : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Checkbox(
+                value: isSelected,
+                activeColor: AppTheme.primary,
+                onChanged: (_) => onToggle(),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          id,
+                          style: const TextStyle(
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                          color: AppTheme.textGrey, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (certType != null) ...[
+                const SizedBox(width: 8),
+                _CertStatusBadge(regCode: id, certType: certType!),
+              ],
+            ],
+          ),
         ),
       ),
     );
