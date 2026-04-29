@@ -2,7 +2,7 @@ class ApiConfig {
   // For Windows desktop: use localhost:8000
   // For phone: use your PC's IP:8000 (run: php -S 0.0.0.0:8000 router.php)
   static const String baseUrl =
-      'http://192.168.14.24:8050/vidyen_flutter/api'; // nginx via MAMP
+      'http://localhost/vidyen_flutter/api'; // nginx via MAMP
 
   // Auth
   static const String login = '$baseUrl/auth/login';

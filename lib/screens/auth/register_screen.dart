@@ -28,7 +28,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _pincodeCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
 
   String _title = 'Dr.';
   String _gender = 'Male';
@@ -53,7 +52,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _pincodeCtrl,
       _phoneCtrl,
       _emailCtrl,
-      _passwordCtrl,
     ]) c.dispose();
     super.dispose();
   }
@@ -77,7 +75,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       'pincode': _pincodeCtrl.text.trim(),
       'phone': _phoneCtrl.text.trim(),
       'email': _emailCtrl.text.trim(),
-      'password': _passwordCtrl.text.trim(),
       'ifdhe_member': _ifdhe ? '1' : '0',
       'abstract_submission': _abstractSub ? '1' : '0',
       'preconference': _preconf ? '1' : '0',
@@ -205,9 +202,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: 12),
           _textField(_emailCtrl, 'Email', Icons.email_outlined,
               keyboardType: TextInputType.emailAddress),
-          const SizedBox(height: 12),
-          _textField(_passwordCtrl, 'Password', Icons.lock_outline,
-              obscureText: true),
         ]),
       );
 
