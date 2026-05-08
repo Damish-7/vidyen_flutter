@@ -1,33 +1,37 @@
 import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
 class StorageService {
   static const String _tokenKey = 'vidyen_jwt_token';
-  static const String _userKey = 'vidyen_user_data';
-
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  static const String _userKey  = 'vidyen_user_data';
 
   Future<void> saveToken(String token) async {
-    await _storage.write(key: _tokenKey, value: token);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: _tokenKey);
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
   }
 
   Future<void> saveUser(UserModel user) async {
-    await _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, jsonEncode(user.toJson()));
   }
 
   Future<UserModel?> getUser() async {
-    final raw = await _storage.read(key: _userKey);
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_userKey);
     if (raw == null) return null;
     final json = jsonDecode(raw) as Map<String, dynamic>;
     return UserModel.fromJson(json, json['token'] ?? '');
   }
 
   Future<void> clear() async {
-    await _storage.deleteAll();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
   }
 }

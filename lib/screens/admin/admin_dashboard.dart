@@ -13,6 +13,7 @@ import 'admin_reviewers_screen.dart';
 import 'admin_conference_rooms_screen.dart';
 import 'admin_generate_certs_screen.dart';
 import 'admin_view_certs_screen.dart';
+import '../conference_rooms_tabs.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -153,8 +154,8 @@ class _AdminDrawer extends StatelessWidget {
                   const CircleAvatar(
                     radius: 26,
                     backgroundColor: Colors.white24,
-                    child:
-                        Icon(Icons.admin_panel_settings, color: Colors.white, size: 28),
+                    child: Icon(Icons.admin_panel_settings,
+                        color: Colors.white, size: 28),
                   ),
                   const SizedBox(height: 10),
                   Text(user?.name ?? 'Admin',
@@ -163,8 +164,8 @@ class _AdminDrawer extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.bold)),
                   Text(user?.email ?? '',
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
@@ -199,9 +200,8 @@ class _AdminDrawer extends StatelessWidget {
                     return ListTile(
                       leading: Icon(item.icon,
                           size: isSubItem ? 20 : 22,
-                          color: selected
-                              ? AppTheme.primary
-                              : AppTheme.textGrey),
+                          color:
+                              selected ? AppTheme.primary : AppTheme.textGrey),
                       title: Text(item.label,
                           style: TextStyle(
                               fontSize: isSubItem ? 13 : 14,
@@ -227,8 +227,8 @@ class _AdminDrawer extends StatelessWidget {
           const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.logout, color: AppTheme.danger),
-            title: const Text('Logout',
-                style: TextStyle(color: AppTheme.danger)),
+            title:
+                const Text('Logout', style: TextStyle(color: AppTheme.danger)),
             onTap: () async {
               Navigator.pop(context);
               await context.read<AuthProvider>().logout();
@@ -286,6 +286,14 @@ class _AdminHomeTab extends StatelessWidget {
                   style: TextStyle(color: Colors.white70)),
             ]),
           ),
+          const SizedBox(height: 24),
+          const Text('Conference Rooms',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDark)),
+          const SizedBox(height: 12),
+          const ConferenceRoomsTabs(),
           const SizedBox(height: 24),
           const Text('Overview',
               style: TextStyle(

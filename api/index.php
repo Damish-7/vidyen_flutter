@@ -2,7 +2,7 @@
 /**
  * VIDYEN Conference API
  * Token-based REST API
- * Base URL: /vidyen/api/
+ * Base URL: /vidyen_flutter/api/
  *
  * Routes:
  *   POST   /auth/login
@@ -48,7 +48,18 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/helpers/JWTHelper.php';
 require_once __DIR__ . '/helpers/Response.php';
 
-// Global exception handler — ensures all unhandled errors return JSON
+// ─── CORS Headers ─────────────────────────────────────────────────────────────
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Content-Type: application/json");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit();
+}
+
+// ─── Global Exception Handler ─────────────────────────────────────────────────
 set_exception_handler(function (\Throwable $e) {
     http_response_code(500);
     echo json_encode([
@@ -59,17 +70,20 @@ set_exception_handler(function (\Throwable $e) {
     exit();
 });
 
-// Get request path and method
-$requestUri    = $_SERVER['REQUEST_URI'];
-$scriptName    = dirname($_SERVER['SCRIPT_NAME']);
-$path          = str_replace($scriptName, '', parse_url($requestUri, PHP_URL_PATH));
-$path          = '/' . trim($path, '/');
-$method        = $_SERVER['REQUEST_METHOD'];
+// ─── Path Parsing ─────────────────────────────────────────────────────────────
+$requestUri = $_SERVER['REQUEST_URI'];
+$method     = $_SERVER['REQUEST_METHOD'];
 
-// Split path into segments
+$urlPath  = parse_url($requestUri, PHP_URL_PATH);
+$basePath = '/vidyen_flutter/api';
+
+if (strpos($urlPath, $basePath) === 0) {
+    $path = substr($urlPath, strlen($basePath));
+}
+$path     = '/' . trim($path ?? '', '/');
 $segments = array_values(array_filter(explode('/', $path)));
 
-// Helper: load controller
+// ─── Helper: Load Controller ──────────────────────────────────────────────────
 function loadController(string $name): object {
     $file = __DIR__ . "/controllers/{$name}.php";
     if (!file_exists($file)) Response::notFound("Controller not found");
@@ -77,8 +91,7 @@ function loadController(string $name): object {
     return new $name();
 }
 
-// ─── Routing ─────────────────────────────────────────────────────────────────
-
+// ─── Routing ──────────────────────────────────────────────────────────────────
 $seg0 = $segments[0] ?? '';
 $seg1 = $segments[1] ?? '';
 $seg2 = $segments[2] ?? '';
@@ -96,35 +109,35 @@ if ($seg0 === 'auth') {
 // REGISTRATION routes  /registration/...
 if ($seg0 === 'registration') {
     $ctrl = loadController('RegistrationController');
-    if ($method === 'POST' && !$seg1)        { $ctrl->create();              exit(); }
-    if ($method === 'GET'  && $seg1 === 'me') { $ctrl->getMyRegistration();  exit(); }
+    if ($method === 'POST' && !$seg1)         { $ctrl->create();            exit(); }
+    if ($method === 'GET'  && $seg1 === 'me') { $ctrl->getMyRegistration(); exit(); }
     Response::notFound('Registration route not found');
 }
 
 // ABSTRACTS routes  /abstracts/...
 if ($seg0 === 'abstracts') {
     $ctrl = loadController('AbstractController');
-    if ($method === 'POST' && !$seg1)          { $ctrl->create();              exit(); }
-    if ($method === 'GET'  && $seg1 === 'my')  { $ctrl->myAbstracts();        exit(); }
-    if ($method === 'GET'  && $seg1)           { $ctrl->viewOne($seg1);       exit(); }
+    if ($method === 'POST' && !$seg1)         { $ctrl->create();       exit(); }
+    if ($method === 'GET'  && $seg1 === 'my') { $ctrl->myAbstracts();  exit(); }
+    if ($method === 'GET'  && $seg1)          { $ctrl->viewOne($seg1); exit(); }
     Response::notFound('Abstracts route not found');
 }
 
 // PRE-CONFERENCE routes  /preconference/...
 if ($seg0 === 'preconference') {
     $ctrl = loadController('PreConferenceController');
-    if ($method === 'POST' && !$seg1)          { $ctrl->create();             exit(); }
-    if ($method === 'GET'  && $seg1 === 'my')  { $ctrl->mySubmissions();     exit(); }
-    if ($method === 'GET'  && $seg1)           { $ctrl->viewOne($seg1);      exit(); }
+    if ($method === 'POST' && !$seg1)         { $ctrl->create();        exit(); }
+    if ($method === 'GET'  && $seg1 === 'my') { $ctrl->mySubmissions(); exit(); }
+    if ($method === 'GET'  && $seg1)          { $ctrl->viewOne($seg1);  exit(); }
     Response::notFound('Preconference route not found');
 }
 
 // WORKSHOP routes  /workshop/...
 if ($seg0 === 'workshop') {
     $ctrl = loadController('WorkshopController');
-    if ($method === 'POST' && !$seg1)          { $ctrl->create();             exit(); }
-    if ($method === 'GET'  && $seg1 === 'my')  { $ctrl->mySubmissions();     exit(); }
-    if ($method === 'GET'  && $seg1)           { $ctrl->viewOne($seg1);      exit(); }
+    if ($method === 'POST' && !$seg1)         { $ctrl->create();        exit(); }
+    if ($method === 'GET'  && $seg1 === 'my') { $ctrl->mySubmissions(); exit(); }
+    if ($method === 'GET'  && $seg1)          { $ctrl->viewOne($seg1);  exit(); }
     Response::notFound('Workshop route not found');
 }
 
@@ -142,74 +155,71 @@ if ($seg0 === 'reviewer') {
 // CERTIFICATES routes  /certificates/...
 if ($seg0 === 'certificates') {
     $ctrl = loadController('CertificateController');
-    if ($method === 'GET' && $seg1 === 'my')           { $ctrl->myCertificates();             exit(); }
-    if ($method === 'GET' && $seg1 === 'co-authors')   { $ctrl->myCoAuthors();                exit(); }
-    if ($method === 'GET' && $seg1 && $seg2)           { $ctrl->downloadInfo($seg1, $seg2);   exit(); }
+    if ($method === 'GET' && $seg1 === 'my')         { $ctrl->myCertificates();           exit(); }
+    if ($method === 'GET' && $seg1 === 'co-authors') { $ctrl->myCoAuthors();              exit(); }
+    if ($method === 'GET' && $seg1 && $seg2)         { $ctrl->downloadInfo($seg1, $seg2); exit(); }
     Response::notFound('Certificates route not found');
 }
 
 // ADMIN routes  /admin/...
 if ($seg0 === 'admin') {
+
     if ($seg1 === 'dashboard') {
         loadController('AdminController')->dashboard(); exit();
     }
 
     if ($seg1 === 'registrations') {
-        $ctrl = loadController('RegistrationController');
-        if ($method === 'GET' && !$seg2) { $ctrl->listAll(); exit(); }
-        
-        // Handle activate endpoint: /admin/registrations/VIDYEN/1000021/activate
-        // Registration code contains slash, so we need to check last segment
+        $ctrl    = loadController('RegistrationController');
         $lastSeg = end($segments);
+
+        if ($method === 'GET' && !$seg2) { $ctrl->listAll(); exit(); }
+
         if ($method === 'PUT' && $lastSeg === 'activate') {
-            // Reconstruct registration code from segments between 'registrations' and 'activate'
-            $codeSegments = array_slice($segments, 2, -1); // Skip 'admin', 'registrations' and 'activate'
-            $regCode = implode('/', $codeSegments);
+            $codeSegments = array_slice($segments, 2, -1);
+            $regCode      = implode('/', $codeSegments);
             $ctrl->activate($regCode);
             exit();
         }
-        
-        // View single registration by code (not implemented yet)
-        if ($method === 'GET' && $seg2) { 
-            // Reconstruct full registration code
+
+        if ($method === 'GET' && $seg2) {
             $codeSegments = array_slice($segments, 2);
-            $regCode = implode('/', $codeSegments);
+            $regCode      = implode('/', $codeSegments);
             $ctrl->viewOne($regCode);
             exit();
         }
-        
+
         Response::notFound('Admin registrations route not found');
     }
 
     if ($seg1 === 'abstracts') {
         $ctrl = loadController('AbstractController');
-        if ($method === 'GET'  && !$seg2)                              { $ctrl->listAll();             exit(); }
-        if ($method === 'PUT'  && $seg2 && $seg3 === 'status')         { $ctrl->updateStatus($seg2);   exit(); }
+        if ($method === 'GET'  && !$seg2)                               { $ctrl->listAll();             exit(); }
+        if ($method === 'PUT'  && $seg2 && $seg3 === 'status')          { $ctrl->updateStatus($seg2);   exit(); }
         if ($method === 'POST' && $seg2 && $seg3 === 'assign-reviewer') { $ctrl->assignReviewer($seg2); exit(); }
         Response::notFound('Admin abstracts route not found');
     }
 
     if ($seg1 === 'preconference') {
         $ctrl = loadController('PreConferenceController');
-        if ($method === 'GET'  && !$seg2)                              { $ctrl->listAll();           exit(); }
-        if ($method === 'PUT'  && $seg2 && $seg3 === 'status')         { $ctrl->updateStatus($seg2); exit(); }
+        if ($method === 'GET'  && !$seg2)                               { $ctrl->listAll();             exit(); }
+        if ($method === 'PUT'  && $seg2 && $seg3 === 'status')          { $ctrl->updateStatus($seg2);   exit(); }
         if ($method === 'POST' && $seg2 && $seg3 === 'assign-reviewer') { $ctrl->assignReviewer($seg2); exit(); }
         Response::notFound('Admin preconference route not found');
     }
 
     if ($seg1 === 'workshop') {
         $ctrl = loadController('WorkshopController');
-        if ($method === 'GET'  && !$seg2)                              { $ctrl->listAll();             exit(); }
-        if ($method === 'PUT'  && $seg2 && $seg3 === 'status')         { $ctrl->updateStatus($seg2);   exit(); }
+        if ($method === 'GET'  && !$seg2)                               { $ctrl->listAll();             exit(); }
+        if ($method === 'PUT'  && $seg2 && $seg3 === 'status')          { $ctrl->updateStatus($seg2);   exit(); }
         if ($method === 'POST' && $seg2 && $seg3 === 'assign-reviewer') { $ctrl->assignReviewer($seg2); exit(); }
         Response::notFound('Admin workshop route not found');
     }
 
     if ($seg1 === 'certificates') {
         $ctrl = loadController('CertificateController');
-        if ($method === 'GET'    && !$seg2)                  { $ctrl->listAll();        exit(); }
-        if ($method === 'POST'   && $seg2 === 'generate')    { $ctrl->generate();       exit(); }
-        if ($method === 'DELETE' && $seg2)                   { $ctrl->revoke($seg2);    exit(); }
+        if ($method === 'GET'    && !$seg2)               { $ctrl->listAll();     exit(); }
+        if ($method === 'POST'   && $seg2 === 'generate') { $ctrl->generate();    exit(); }
+        if ($method === 'DELETE' && $seg2)                { $ctrl->revoke($seg2); exit(); }
         Response::notFound('Admin certificates route not found');
     }
 
@@ -221,7 +231,7 @@ if ($seg0 === 'admin') {
 
     if ($seg1 === 'users') {
         $ctrl = loadController('AdminController');
-        if ($method === 'GET' && !$seg2)                         { $ctrl->listUsers();            exit(); }
+        if ($method === 'GET' && !$seg2)                             { $ctrl->listUsers();             exit(); }
         if ($method === 'PUT' && $seg2 && $seg3 === 'toggle-status') { $ctrl->toggleUserStatus($seg2); exit(); }
         Response::notFound('Admin users route not found');
     }
@@ -232,23 +242,23 @@ if ($seg0 === 'admin') {
 
     if ($seg1 === 'reviewers') {
         $ctrl = loadController('AdminController');
-        if ($method === 'GET'  && !$seg2)  { $ctrl->listReviewers();     exit(); }
-        if ($method === 'GET'  && $seg2)   { $ctrl->viewReviewer($seg2); exit(); }
-        if ($method === 'POST' && !$seg2)  { $ctrl->addReviewer();       exit(); }
+        if ($method === 'GET'  && !$seg2) { $ctrl->listReviewers();     exit(); }
+        if ($method === 'GET'  && $seg2)  { $ctrl->viewReviewer($seg2); exit(); }
+        if ($method === 'POST' && !$seg2) { $ctrl->addReviewer();       exit(); }
         Response::notFound('Admin reviewers route not found');
     }
 
     if ($seg1 === 'conference-rooms') {
         $ctrl = loadController('ConferenceRoomController');
-        if ($method === 'GET'    && !$seg2) { $ctrl->listAll();       exit(); }
-        if ($method === 'POST'   && !$seg2) { $ctrl->create();        exit(); }
-        if ($method === 'PUT'    && $seg2)  { $ctrl->update($seg2);   exit(); }
-        if ($method === 'DELETE' && $seg2)  { $ctrl->delete($seg2);   exit(); }
+        if ($method === 'GET'    && !$seg2) { $ctrl->listAll();     exit(); }
+        if ($method === 'POST'   && !$seg2) { $ctrl->create();      exit(); }
+        if ($method === 'PUT'    && $seg2)  { $ctrl->update($seg2); exit(); }
+        if ($method === 'DELETE' && $seg2)  { $ctrl->delete($seg2); exit(); }
         Response::notFound('Conference rooms route not found');
     }
 
     Response::notFound('Admin route not found');
 }
 
-// Fallback
-Response::notFound('VIDYEN API: Route not found. See /vidyen/api/ for docs.');
+// ─── Fallback ─────────────────────────────────────────────────────────────────
+Response::notFound('VIDYEN API: Route not found. See /vidyen_flutter/api/ for docs.');
