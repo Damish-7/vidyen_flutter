@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vidyen_app/screens/conference_rooms_tabs.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/conference_provider.dart';
 import '../../widgets/app_theme.dart';
@@ -249,6 +250,23 @@ class _ReviewerHomeBody extends StatelessWidget {
               ],
             ),
           ),
+
+
+          //conference rooms section
+
+          const SizedBox(height: 24),
+          const Text('Conference Rooms',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDark
+                  ),
+                  ),
+
+          const SizedBox(height: 12),
+          const ConferenceRoomsCard(),
+
+          
           const SizedBox(height: 24),
           const Text(
             'Overview',

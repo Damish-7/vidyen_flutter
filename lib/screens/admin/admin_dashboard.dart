@@ -286,14 +286,23 @@ class _AdminHomeTab extends StatelessWidget {
                   style: TextStyle(color: Colors.white70)),
             ]),
           ),
+
+
+          //conference rooms section
+
           const SizedBox(height: 24),
           const Text('Conference Rooms',
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textDark)),
+                  color: AppTheme.textDark
+                  ),
+                  ),
+
           const SizedBox(height: 12),
-          const ConferenceRoomsTabs(),
+          const ConferenceRoomsCard(),
+
+
           const SizedBox(height: 24),
           const Text('Overview',
               style: TextStyle(
