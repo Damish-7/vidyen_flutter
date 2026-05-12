@@ -10,7 +10,7 @@ class ConferenceRoomController {
      * List all rooms (not deleted)
      */
     public function listAll(): void {
-        Auth::requireRole('admin');
+        Auth::require();
         $conn = getDB();
 
         $result = mysqli_query($conn,

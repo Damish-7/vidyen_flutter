@@ -11,6 +11,7 @@ class ConferenceProvider extends ChangeNotifier {
 
   bool _loading = false;
   String? _error;
+  bool _roomsLoaded = false; // ✅ cache flag
 
   RegistrationModel? registration;
   List<AbstractModel> abstracts = [];
@@ -181,22 +182,36 @@ class ConferenceProvider extends ChangeNotifier {
     return await _runBool(() => _service.adminAddReviewer(data));
   }
 
-  Future<void> loadAllConferenceRooms() async {
+  // ── Conference Rooms ───────────────────────────────────────────────────
+
+  Future<void> loadAllConferenceRooms({bool forceRefresh = false}) async {
+    if (_roomsLoaded && !forceRefresh) return; // ✅ skip if already loaded
     await _run(() async {
       allConferenceRooms = await _service.adminGetConferenceRooms();
+      _roomsLoaded = true;
     });
   }
 
+  void resetRoomsCache() {
+    _roomsLoaded = false; // ✅ call this after add/edit/delete
+  }
+
   Future<bool> addConferenceRoom(Map<String, dynamic> data) async {
-    return await _runBool(() => _service.adminAddConferenceRoom(data));
+    final ok = await _runBool(() => _service.adminAddConferenceRoom(data));
+    if (ok) resetRoomsCache();
+    return ok;
   }
 
   Future<bool> updateConferenceRoom(String id, Map<String, dynamic> data) async {
-    return await _runBool(() => _service.adminUpdateConferenceRoom(id, data));
+    final ok = await _runBool(() => _service.adminUpdateConferenceRoom(id, data));
+    if (ok) resetRoomsCache();
+    return ok;
   }
 
   Future<bool> deleteConferenceRoom(String id) async {
-    return await _runBool(() => _service.adminDeleteConferenceRoom(id));
+    final ok = await _runBool(() => _service.adminDeleteConferenceRoom(id));
+    if (ok) resetRoomsCache();
+    return ok;
   }
 
   // ── Internal helpers ───────────────────────────────────────────────────

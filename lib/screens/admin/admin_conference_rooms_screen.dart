@@ -36,7 +36,7 @@ class _AdminConferenceRoomsScreenState
                       context.read<ConferenceProvider>().loadAllConferenceRooms())
               : RefreshIndicator(
                   onRefresh: () =>
-                      context.read<ConferenceProvider>().loadAllConferenceRooms(),
+                      context.read<ConferenceProvider>().loadAllConferenceRooms(forceRefresh: true),
                   child: list.isEmpty
                       ? const Center(child: Text('No conference rooms found'))
                       : ListView.builder(
