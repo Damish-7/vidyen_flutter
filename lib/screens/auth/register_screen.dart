@@ -28,7 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _pincodeCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-
+ 
   String _title = 'Dr.';
   String _gender = 'Male';
   String _delegateType = 'Faculty';

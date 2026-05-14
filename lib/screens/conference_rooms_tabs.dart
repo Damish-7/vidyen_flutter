@@ -195,16 +195,14 @@ class _ConferenceRoomsCardState extends State<ConferenceRoomsCard> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
-              onPressed: _current > 0
-                  ? () => setState(() => _current--)
-                  : null,
+              onPressed: _current > 0 ? () => setState(() => _current--) : null,
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
             ),
             Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppTheme.primary,
                     borderRadius: BorderRadius.circular(8),
@@ -219,8 +217,7 @@ class _ConferenceRoomsCardState extends State<ConferenceRoomsCard> {
                 ),
                 const SizedBox(height: 4),
                 Text('${_current + 1} of ${types.length}',
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey[600])),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
               ],
             ),
             IconButton(
@@ -235,80 +232,81 @@ class _ConferenceRoomsCardState extends State<ConferenceRoomsCard> {
         const SizedBox(height: 8),
 
         // ── Room cards ──
-...rooms.map((room) {
-  final links = (room['links']?.toString() ?? '')
-      .split('\n')
-      .map((l) => l.trim())
-      .where((l) => l.isNotEmpty)
-      .toList();
+        ...rooms.map((room) {
+          final links = (room['links']?.toString() ?? '')
+              .split('\n')
+              .map((l) => l.trim())
+              .where((l) => l.isNotEmpty)
+              .toList();
 
-  return Card(
-    margin: const EdgeInsets.only(bottom: 10),
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10)),
-    child: Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            const Icon(Icons.meeting_room_outlined,
-                size: 18, color: AppTheme.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                room['name']?.toString() ?? '',
-                style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textDark),
+          return Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Icon(Icons.meeting_room_outlined,
+                        size: 18, color: AppTheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        room['name']?.toString() ?? '',
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textDark),
+                      ),
+                    ),
+                  ]),
+                  if (links.isNotEmpty) ...[
+                    const Divider(height: 16),
+                    ...links.map((link) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: GestureDetector(
+                            onTap: () async {
+                              final uri = Uri.parse(link);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(
+                                  uri,
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Could not open: $link')),
+                                );
+                              }
+                            },
+                            child: Row(children: [
+                              const Icon(Icons.link,
+                                  size: 16, color: Colors.blue),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  link,
+                                  style: const TextStyle(
+                                      color: Colors.blue,
+                                      decoration: TextDecoration.underline,
+                                      fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ]),
+                          ),
+                        )),
+                  ],
+                ],
               ),
             ),
-          ]),
-          if (links.isNotEmpty) ...[
-            const Divider(height: 16),
-            ...links.map((link) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: GestureDetector(
-                    onTap: () async {
-                      final uri = Uri.parse(link);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(
-                          uri,
-                          mode: LaunchMode.externalApplication,
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Could not open: $link')),
-                        );
-                      }
-                    },
-                    child: Row(children: [
-                      const Icon(Icons.link,
-                          size: 16, color: Colors.blue),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          link,
-                          style: const TextStyle(
-                              color: Colors.blue,
-                              decoration: TextDecoration.underline,
-                              fontSize: 13),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ]),
-                  ),
-                )),
-          ],
-        ],
-      ),
-    ),
-  );
-}),
+          );
+        }),
 
-const SizedBox(height: 8),
+        const SizedBox(height: 8),
 
         // ── Dot indicators ──
         Row(
@@ -324,9 +322,7 @@ const SizedBox(height: 8),
                 height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: i == _current
-                      ? AppTheme.primary
-                      : Colors.grey[400],
+                  color: i == _current ? AppTheme.primary : Colors.grey[400],
                 ),
               ),
             ),
